@@ -1,0 +1,122 @@
+	.model small
+	.stack 1024
+	
+	.data
+	
+	include R:\SrcDOS\adventOfCode\sonar_input.asm
+	
+UserRam byte 256 DUP (0)
+CursorX				equ UserRam		;byte, for debugging
+CursorY				equ UserRam+1	;byte, for debugging
+
+MonitorBak_AX 		equ UserRam+2	;word, for debugging
+MonitorBak_F		equ UserRam+4	;word, for debugging
+MonitorBak_IP   	equ UserRam+6	;word, for debugging
+MonitorBak_ES   	equ UserRam+8	;word, for debugging
+MonitorBak_DS   	equ UserRam+10	;word, for debugging
+TextColor			equ UserRam+12	;byte
+
+SumOfMeasurements 	equ UserRam+14	
+;2 bytes, total number of measurements that are greater than the one before
+	
+;END OF USER RAM
+
+;;;;;; MACROS
+		include \SrcAll\8086_Macros.asm
+		include \SrcDOS\lib\macros\DOS_Macros.asm
+		include \SrcDOS\lib\macros\debug_macros.asm
+		include \SrcDOS\lib\macros\video_macros.asm
+		include \SrcDOS\lib\macros\mouse_macros.asm
+		include \SrcDOS\lib\macros\keyboard_macros.asm
+
+;DEFINITIONS
+		include \SrcDOS\lib\macros\ascii_defs.asm
+		;DEFINES LABELS FOR OBSCURE ASCII CHARS
+		include \SrcDOS\lib\gfx\videomodes.asm
+		;DEFINES LABELS FOR COLORS, VIDEO MODES, ETC.
+		
+
+	.code
+	
+start:
+	;ANSWER TO QUESTION 1 - WRITTEN BY ME
+	mov ax,@data
+	mov ds,ax
+	mov es,ax
+	
+	cld
+	
+	mov ax,2		;clear screen by setting video mode to 0
+	int 10h			;select text mode
+	
+	mov si,offset SONAR_DATA
+	
+	inc si
+	inc si
+	
+	mov di,offset SONAR_DATA
+	
+	
+	mov cx,offset SONAR_DATA_END
+	mov dx,si
+	
+	sub cx,dx		;this is our loop counter for when to end.
+	shr cx,1
+
+	
+mainproc:
+	lodsw
+	mov bx,ax		;put current measurement into bx
+	mov ax,[es:di]	;put previous measurement into ax
+	inc di
+	inc di
+	cmp bx,ax		;sets flags as if we did CURRENT - OLD
+	JB	skipInc			;IF CURRENT <= OLD, DON'T INC COUNTER
+		push ax
+			mov ax, word ptr [ds:SumOfMeasurements]
+			add ax,1
+			daa
+			mov word ptr [ds:SumOfMeasurements],ax
+	
+skipInc:
+	loop mainproc
+	
+	mov ax,word ptr [ds:SumOfMeasurements]
+	call Printhex
+	
+	mov ax,4C00h
+	int 21h
+	
+;;;; I/O STUFF - WRITTEN BY KEITH OF CHIBIAKUMAS.COM
+
+Printhex:
+	;input: ax
+	push ax
+		mov ah,al
+		and ah,11110000b
+
+			ror ah,1	
+			ror ah,1
+			ror ah,1
+			ror ah,1
+	
+		call PrintHexChar
+		mov ah,al
+		and ah,00001111B
+		call PrintHexChar
+	pop ax
+	ret
+PrintHexChar:
+	push ax
+		cmp ah,9
+		jle PrintHexCharNumber
+		add ah,'A'-('0'+10)
+PrintHexCharNumber:
+		add ah,'0'
+		mov al,ah
+		mov ah,0Eh
+		int 10h
+	pop ax
+	ret
+	
+end start
