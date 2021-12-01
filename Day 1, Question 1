@@ -18,7 +18,7 @@ SumOfMeasurements 	equ UserRam
 	.code
 	
 start:
-	;ANSWER TO QUESTION 1 - WRITTEN BY WILLIAM DRUM
+	;ANSWER TO QUESTION 1 - WRITTEN BY ME
 	mov ax,@data
 	mov ds,ax
 	mov es,ax
