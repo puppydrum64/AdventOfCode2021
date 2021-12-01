@@ -6,40 +6,19 @@
 	include R:\SrcDOS\adventOfCode\sonar_input.asm
 	
 UserRam byte 256 DUP (0)
-CursorX				equ UserRam		;byte, for debugging
-CursorY				equ UserRam+1	;byte, for debugging
 
-MonitorBak_AX 		equ UserRam+2	;word, for debugging
-MonitorBak_F		equ UserRam+4	;word, for debugging
-MonitorBak_IP   	equ UserRam+6	;word, for debugging
-MonitorBak_ES   	equ UserRam+8	;word, for debugging
-MonitorBak_DS   	equ UserRam+10	;word, for debugging
-TextColor			equ UserRam+12	;byte
 
-SumOfMeasurements 	equ UserRam+14	
+SumOfMeasurements 	equ UserRam
 ;2 bytes, total number of measurements that are greater than the one before
 	
 ;END OF USER RAM
 
-;;;;;; MACROS
-		include \SrcAll\8086_Macros.asm
-		include \SrcDOS\lib\macros\DOS_Macros.asm
-		include \SrcDOS\lib\macros\debug_macros.asm
-		include \SrcDOS\lib\macros\video_macros.asm
-		include \SrcDOS\lib\macros\mouse_macros.asm
-		include \SrcDOS\lib\macros\keyboard_macros.asm
-
-;DEFINITIONS
-		include \SrcDOS\lib\macros\ascii_defs.asm
-		;DEFINES LABELS FOR OBSCURE ASCII CHARS
-		include \SrcDOS\lib\gfx\videomodes.asm
-		;DEFINES LABELS FOR COLORS, VIDEO MODES, ETC.
 		
 
 	.code
 	
 start:
-	;ANSWER TO QUESTION 1 - WRITTEN BY ME
+	;ANSWER TO QUESTION 1 - WRITTEN BY WILLIAM DRUM
 	mov ax,@data
 	mov ds,ax
 	mov es,ax
@@ -61,42 +40,39 @@ start:
 	mov dx,si
 	
 	sub cx,dx		;this is our loop counter for when to end.
-	shr cx,1
+	shr cx,1		;divide by 2 to get the proper range.
 
 	
-mainproc:
-	lodsw
-	mov bx,ax		;put current measurement into bx
-	mov ax,[es:di]	;put previous measurement into ax
-	inc di
-	inc di
-	cmp bx,ax		;sets flags as if we did CURRENT - OLD
-	JB	skipInc			;IF CURRENT <= OLD, DON'T INC COUNTER
-		push ax
-			inc word ptr [ds:SumOfMeasurements]
 	
+mainproc:
+	cmpsw
+	jb skipInc
+		inc word ptr [ds:SumOfMeasurements]
 skipInc:
 	loop mainproc
 	
-	mov ax,word ptr [ds:SumOfMeasurements]
+	
+	mov dx,word ptr [ds:SumOfMeasurements]
+	mov al,dh
+	call Printhex
+	mov al,dl
 	call Printhex
 	
-	mov ax,4C00h
+	
+	
+	
+	mov ax,4C00h		;return to dos
 	int 21h
 	
 ;;;; I/O STUFF - WRITTEN BY KEITH OF CHIBIAKUMAS.COM
-
 Printhex:
-	;input: ax
 	push ax
 		mov ah,al
-		and ah,11110000b
-
-			ror ah,1	
+		and ah,11110000B
+			ror ah,1	;can't use >1 on 8086
 			ror ah,1
 			ror ah,1
 			ror ah,1
-	
 		call PrintHexChar
 		mov ah,al
 		and ah,00001111B
@@ -115,5 +91,6 @@ PrintHexCharNumber:
 		int 10h
 	pop ax
 	ret
+
 	
 end start
