@@ -73,10 +73,7 @@ mainproc:
 	cmp bx,ax		;sets flags as if we did CURRENT - OLD
 	JB	skipInc			;IF CURRENT <= OLD, DON'T INC COUNTER
 		push ax
-			mov ax, word ptr [ds:SumOfMeasurements]
-			add ax,1
-			daa
-			mov word ptr [ds:SumOfMeasurements],ax
+			inc word ptr [ds:SumOfMeasurements]
 	
 skipInc:
 	loop mainproc
