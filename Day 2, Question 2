@@ -1,0 +1,118 @@
+	.model small
+	.stack 1024
+	
+	.data
+	
+	include R:\SrcDOS\adventOfCode\Day_2\input.asm
+	
+UserRam byte 256 DUP (0)
+CursorX				equ UserRam		;byte, for debugging
+CursorY				equ UserRam+1	;byte, for debugging
+
+MonitorBak_AX 		equ UserRam+2	;word, for debugging
+MonitorBak_F		equ UserRam+4	;word, for debugging
+MonitorBak_IP   	equ UserRam+6	;word, for debugging
+MonitorBak_ES   	equ UserRam+8	;word, for debugging
+MonitorBak_DS   	equ UserRam+10	;word, for debugging
+TextColor			equ UserRam+12	;byte
+
+SumOfDistance equ UserRam+14
+SumOfDepth 		equ UserRam+16
+SumOfDepth_Hi	equ UserRam+18
+SumOfAim equ UserRam+20
+
+
+	
+;END OF USER RAM
+	include \SrcDOS\lib\macros\ascii_defs.asm
+	include \SrcDOS\lib\gfx\videomodes.asm
+		
+
+	.code
+	
+start:
+	;ANSWER TO QUESTION 2
+	mov ax,@data
+	mov ds,ax
+	mov es,ax
+	
+	cld
+	
+	mov ax,2		;clear screen by setting video mode to 0
+	int 10h			;select text mode
+
+	mov si,offset MOVEMENT_INPUT
+
+	
+mainproc:
+	lodsb
+	cmp al,80h
+	jz done
+	cmp al,0
+	jz IsForwardTravel
+	cmp al,1
+	jz IsGoingDown
+	cmp al,255
+	jz IsGoingUp
+	jmp mainproc
+	
+IsForwardTravel:
+	lodsb
+	mov ah,0
+	push ax
+		add ax, word ptr [ds:SumOfDistance]
+		mov word ptr [ds:SumOfDistance], ax		;add AL to distance.
+	pop ax
+	;get old AL back.
+	mov bx, word ptr [ds:SumOfAim]
+	mul bx
+	add ax, word ptr [ds:SumOfDepth]
+	mov word ptr [ds:SumOfDepth],ax
+	jnc mainproc
+		inc word ptr [ds:SumOfDepth_Hi]
+
+	
+	jmp mainproc
+	
+IsGoingDown:
+	;increase depth
+	lodsb
+	mov ah,0
+	add ax, word ptr [ds:SumOfAim]
+	mov word ptr [ds:SumOfAim], ax
+	jmp mainproc
+
+	
+IsGoingUp:
+	lodsb
+	mov ah,0
+	mov bx, word ptr [ds:SumOfAim]
+	sub bx,ax
+	mov word ptr [ds:SumOfAim],bx
+	jmp mainproc
+
+done:
+	mov ax, word ptr [ds:SumOfDistance]
+	mov bx, word ptr [ds:SumOfDepth]
+	mul bx
+	
+	
+	call doMonitor
+	call Newline
+	mov bp,offset SumOfDistance
+	mov bx,32
+	call doMemDump		;this will tell us the answer, use a calculator elsewhere to multiply it out.
+	
+	mov ax,4C00h		;return to dos
+	int 21h
+	
+	
+
+	
+;;;; I/O STUFF - WRITTEN BY KEITH OF CHIBIAKUMAS.COM
+
+	include R:\SrcALL\V1_Monitor.asm
+	include R:\SrcDOS\lib\stdio\strings\printing_textmode.asm
+	; include R:\SrcDOS\adventOfCode\printhex.asm
+	
+end start
