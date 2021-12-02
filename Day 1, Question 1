@@ -4,6 +4,7 @@
 	.data
 	
 	include R:\SrcDOS\adventOfCode\sonar_input.asm
+	;my input, converted to binary-coded decimal (although I probably didn't need to do that) 
 	
 UserRam byte 256 DUP (0)
 
