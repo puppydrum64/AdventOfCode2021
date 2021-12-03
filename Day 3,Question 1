@@ -1,0 +1,129 @@
+.model small
+.stack 1024
+
+.data
+
+include R:\SrcDOS\AdventOfCode\Day_3\input.asm
+
+UserRam BYTE 256 DUP (0)
+CursorX				equ UserRam		;byte, for debugging
+CursorY				equ UserRam+1	;byte, for debugging
+
+MonitorBak_AX 		equ UserRam+2	;word, for debugging
+MonitorBak_F		equ UserRam+4	;word, for debugging
+MonitorBak_IP   	equ UserRam+6	;word, for debugging
+MonitorBak_ES   	equ UserRam+8	;word, for debugging
+MonitorBak_DS   	equ UserRam+10	;word, for debugging
+TextColor			equ UserRam+12	;byte
+
+Gamma 			equ UserRam+14
+Epsilon 		equ UserRam+16
+ZeroesCount 	equ UserRam+18
+OnesCount 		equ UserRam+20
+OutputRam		equ UserRam+22
+OutputRamHi		equ UserRam+24
+
+;;;;;; MACROS
+		include \SrcAll\8086_Macros.asm
+		include \SrcDOS\lib\macros\DOS_Macros.asm
+		include \SrcDOS\lib\macros\debug_macros.asm
+		include \SrcDOS\lib\macros\video_macros.asm
+		include \SrcDOS\lib\macros\mouse_macros.asm
+		include \SrcDOS\lib\macros\keyboard_macros.asm
+
+;DEFINITIONS
+		include \SrcDOS\lib\macros\ascii_defs.asm
+		;DEFINES LABELS FOR OBSCURE ASCII CHARS
+		include \SrcDOS\lib\gfx\videomodes.asm
+		;DEFINES LABELS FOR COLORS, VIDEO MODES, ETC.
+
+.code
+
+start:
+
+	mov ax,@data
+	mov ds,ax
+	mov es,ax
+
+	cld
+
+	mov ax,2
+	int 10h
+
+mainproc:
+
+	mov bx,0001000000000000b
+	mov dl,12		;max bits in each row minus 1
+
+outerloop:
+
+	mov si,offset Input
+	mov cx,offset InputEnd
+	sub cx,si			;calculate loop counter
+	shr cx,1			;shift right to account for lodsw's double-inc
+	
+	
+
+	shr bx,1			;shift revolving bit mask
+
+innerloop:
+	lodsw
+	test ax,bx			;returns 1 if the corresponding bit in AX
+	jnz WasOne
+		inc word ptr [ds:ZeroesCount]
+		jmp done
+
+WasOne:
+		inc word ptr [ds:OnesCount]
+
+done:
+	loop innerloop
+
+;done with this digit
+	push cx
+		mov ax,word ptr [ds:ZeroesCount]
+		mov cx,word ptr [ds:OnesCount]
+		cmp cx,ax
+		jb skip
+			or word ptr [ds:Gamma],bx
+skip:
+	pop cx
+	xor ax,ax
+	mov word ptr [ds:ZeroesCount],ax
+	mov word ptr [ds:OnesCount],ax	
+	
+	
+	dec dl
+	jnz outerloop
+
+	mov ax,word ptr [ds:Gamma]
+	mov bx,ax
+	not ax
+	and ax,0000111111111111b
+	
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+	
+	mul bx
+
+	mov word ptr [ds:OutputRam],ax
+	mov word ptr [ds:OutputRamHi],dx
+	
+	mov bp,offset Gamma
+	mov bx,32
+	call doMemDump
+		
+
+	mov ax,4C00h
+	int 21h
+	
+	
+	
+;;;; I/O STUFF - WRITTEN BY KEITH OF CHIBIAKUMAS.COM
+
+	include R:\SrcALL\V1_Monitor.asm
+	include R:\SrcDOS\lib\stdio\strings\printing_textmode.asm
+
+end start
