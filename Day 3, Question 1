@@ -5,8 +5,9 @@
 
 include R:\SrcDOS\AdventOfCode\Day_3\input.asm
 
+
 UserRam BYTE 256 DUP (0)
-CursorX				equ UserRam		;byte, for debugging
+CursorX				equ UserRam	;byte, for debugging
 CursorY				equ UserRam+1	;byte, for debugging
 
 MonitorBak_AX 		equ UserRam+2	;word, for debugging
